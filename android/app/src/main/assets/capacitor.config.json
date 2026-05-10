@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<config>
-    <errorServer url="file:///android_asset/public/index.html" />
-</config>
