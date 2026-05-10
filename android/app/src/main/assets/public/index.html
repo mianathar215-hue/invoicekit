@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="InvoiceKit"/>
+<title>InvoiceKit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#F2F2F7;--card:#fff;--sep:rgba(60,60,67,.18);
+  --t1:#000;--t2:#3C3C43;--t3:#8E8E93;
+  --blue:#007AFF;--green:#34C759;--red:#FF3B30;--orange:#FF9500;
+  --gold:#C9A84C;--gold2:#E8C97A;--navy:#0F1729;
+  --shadow:rgba(0,0,0,.07);--r:13px;--tabh:83px;
+}
+html,body{height:100%;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:var(--bg);color:var(--t1);overflow:hidden}
+.wrap{width:100%;max-width:430px;height:100vh;margin:0 auto;position:relative;overflow:hidden;background:var(--bg)}
+
+/* STATUS BAR */
+.sbar{height:50px;background:var(--card);display:flex;align-items:center;padding:12px 18px 0;justify-content:space-between;z-index:50;position:relative}
+.sbar-t{font-size:15px;font-weight:700}
+.sbar-i{font-size:11px;color:var(--t3)}
+
+/* SCREENS */
+.scr{position:absolute;top:50px;left:0;right:0;bottom:var(--tabh);overflow-y:auto;overflow-x:hidden;display:none;-webkit-overflow-scrolling:touch}
+.scr.on{display:block}
+.scr::-webkit-scrollbar{display:none}
+
+/* NAV */
+.nav{background:rgba(255,255,255,.9);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:.5px solid var(--sep);padding:10px 16px;position:sticky;top:0;z-index:40}
+.nav-r{display:flex;align-items:center;justify-content:space-between}
+.nav-t{font-size:17px;font-weight:600;text-align:center;flex:1}
+.nav-lg{font-size:30px;font-weight:700;letter-spacing:-.5px;padding:4px 16px 10px}
+.nbtn{font-size:15px;color:var(--blue);background:none;border:none;cursor:pointer;padding:4px;font-weight:400;white-space:nowrap}
+.nbtn.b{font-weight:700}
+
+/* TABS */
+.tbar{position:absolute;bottom:0;left:0;right:0;height:var(--tabh);background:rgba(255,255,255,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:.5px solid var(--sep);display:flex;align-items:flex-start;padding-top:8px;z-index:50}
+.ti{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;user-select:none}
+.ti svg{width:24px;height:24px;transition:transform .15s}
+.ti span{font-size:10px;font-weight:500}
+.ti.on svg{fill:var(--blue)}.ti.on span{color:var(--blue)}
+.ti:not(.on) svg{fill:var(--t3)}.ti:not(.on) span{color:var(--t3)}
+.ti:active svg{transform:scale(.8)}
+
+/* SECTION */
+.sec{padding:0 14px;margin-bottom:22px}
+.sec-t{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;padding:0 4px 6px;display:flex;align-items:center;justify-content:space-between}
+.sec-btn{font-size:12px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:600;padding:0}
+
+/* CARD & ROWS */
+.card{background:var(--card);border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px var(--shadow)}
+.row{display:flex;align-items:center;padding:11px 14px;border-bottom:.5px solid var(--sep);gap:10px;min-height:46px}
+.row:last-child{border-bottom:none}
+.rl{font-size:14px;color:var(--t1);min-width:86px;flex-shrink:0}
+.rv{flex:1;font-size:14px;color:var(--t3);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ico svg{width:14px;height:14px;fill:#fff}
+.c-b{background:var(--blue)}.c-g{background:var(--green)}.c-o{background:var(--orange)}
+.c-gd{background:linear-gradient(135deg,var(--gold),var(--gold2))}.c-n{background:var(--navy)}.c-r{background:var(--red)}
+.chev{color:var(--t3);font-size:16px}
+
+/* INPUT */
+.inp{background:transparent;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--t1);width:100%;text-align:right}
+.inp::placeholder{color:var(--t3)}
+.inp[type=number]{-moz-appearance:textfield}
+.inp[type=number]::-webkit-inner-spin-button,
+.inp[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+
+/* SEGMENTED */
+.seg{background:rgba(118,118,128,.12);border-radius:9px;padding:2px;display:flex;margin:12px 14px 0}
+.sg{flex:1;padding:7px 4px;border:none;border-radius:7px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;background:transparent;color:var(--t2);transition:all .2s}
+.sg.on{background:#fff;color:var(--t1);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+
+/* BUTTONS */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:var(--r);border:none;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.72;transform:scale(.97)}
+.btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy)}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-ghost{background:rgba(0,122,255,.1);color:var(--blue)}
+.btn-red{background:rgba(255,59,48,.1);color:var(--red)}
+
+/* STEPPER */
+.stp{display:flex;border:1px solid var(--sep);border-radius:9px;overflow:hidden;flex-shrink:0}
+.stp-b{width:36px;height:36px;background:var(--bg);border:none;font-size:20px;cursor:pointer;color:var(--blue);display:flex;align-items:center;justify-content:center}
+.stp-v{width:34px;height:36px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;background:#fff;border-left:1px solid var(--sep);border-right:1px solid var(--sep)}
+
+/* ITEM CARD */
+.icard{background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px var(--shadow)}
+.icard-h{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:.5px solid var(--sep)}
+.inum{width:22px;height:22px;border-radius:50%;background:var(--navy);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.iamt{font-size:14px;font-weight:700;color:var(--green)}
+.idel{width:26px;height:26px;border-radius:50%;background:rgba(255,59,48,.1);color:var(--red);border:none;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
+
+/* HERO */
+.hero{margin:14px;background:linear-gradient(145deg,var(--navy),#1a2540);border-radius:20px;padding:22px;color:#fff;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:rgba(201,168,76,.12);border-radius:50%}
+.hero-lbl{font-size:11px;opacity:.5;letter-spacing:.5px;text-transform:uppercase}
+.hero-amt{font-size:34px;font-weight:700;letter-spacing:-1px;margin:4px 0 2px;background:linear-gradient(135deg,#fff 60%,var(--gold2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-sub{font-size:12px;opacity:.4}
+.hero-co{font-size:13px;font-weight:600;opacity:.8;margin-top:8px}
+
+/* STATS */
+.stats{display:flex;gap:10px;padding:0 14px 14px}
+.stat{flex:1;background:var(--card);border-radius:12px;padding:12px 8px;text-align:center;box-shadow:0 1px 3px var(--shadow)}
+.stat-v{font-size:18px;font-weight:700;letter-spacing:-.5px}
+.stat-l{font-size:10px;color:var(--t3);margin-top:2px;font-weight:500}
+
+/* HISTORY CARD */
+.hcard{background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px var(--shadow)}
+.hcard-t{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.hico{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--navy),#1a2540);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.hinfo{flex:1;min-width:0}
+.hpar{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdat{font-size:11px;color:var(--t3);margin-top:2px}
+.hrig{text-align:right;flex-shrink:0}
+.hamt{font-size:15px;font-weight:700}
+.hinv{font-size:10px;color:var(--t3);margin-top:2px}
+.hbtns{display:flex;border-top:.5px solid var(--sep)}
+.hbtn{flex:1;padding:10px;background:none;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+
+/* SHEET / OVERLAY */
+.ov{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:flex-end;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.ov.on{display:flex}
+.sheet{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-height:88%;overflow-y:auto;padding-bottom:28px;animation:sup .28s cubic-bezier(.25,.46,.45,.94)}
+.sheet::-webkit-scrollbar{display:none}
+@keyframes sup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.shdl{width:36px;height:4px;background:var(--sep);border-radius:2px;margin:10px auto 14px}
+.shtit{font-size:17px;font-weight:700;text-align:center;padding:0 16px 14px;border-bottom:.5px solid var(--sep);margin-bottom:14px}
+
+/* TOAST */
+.toast{position:absolute;bottom:94px;left:14px;right:14px;background:rgba(0,0,0,.85);color:#fff;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:500;text-align:center;z-index:500;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none}
+.toast.on{opacity:1;transform:translateY(0)}
+.toast.ok{background:#1e7d3e}
+.toast.err{background:var(--red)}
+
+/* BANK CARD IN LIST */
+.bcard{background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px var(--shadow);border:1.5px solid transparent;transition:border-color .2s}
+.bcard.active{border-color:var(--blue);background:rgba(0,122,255,.03)}
+.bcard-top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+.bico{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:700;flex-shrink:0}
+.bname{font-size:14px;font-weight:600}
+.bsub{font-size:11px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbtns{display:flex;border-top:.5px solid var(--sep)}
+.bbtn{flex:1;padding:10px;background:none;border:none;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px}
+
+/* SETUP SCREEN */
+.setup{position:absolute;inset:0;z-index:600;background:linear-gradient(160deg,#0F1729 0%,#1a2540 100%);overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:40px 20px 50px}
+.setup::-webkit-scrollbar{display:none}
+.setup-logo{width:68px;height:68px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:18px;box-shadow:0 8px 28px rgba(201,168,76,.35)}
+.setup-ttl{font-size:24px;font-weight:700;color:#fff;text-align:center;margin-bottom:6px}
+.setup-sub{font-size:13px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:28px;line-height:1.6}
+.setup-sec{font-size:11px;font-weight:700;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.7px;width:100%;margin-bottom:8px;padding-left:2px}
+.setup-card{background:rgba(255,255,255,.07);border-radius:14px;overflow:hidden;width:100%;margin-bottom:16px;border:1px solid rgba(255,255,255,.1)}
+.setup-row{display:flex;align-items:center;padding:12px 16px;border-bottom:.5px solid rgba(255,255,255,.07)}
+.setup-row:last-child{border-bottom:none}
+.setup-lbl{font-size:12px;color:rgba(255,255,255,.5);min-width:96px;flex-shrink:0}
+.setup-inp{background:transparent;border:none;outline:none;font-family:inherit;font-size:14px;color:#fff;flex:1;text-align:right}
+.setup-inp::placeholder{color:rgba(255,255,255,.2)}
+.setup-skip{font-size:13px;color:rgba(255,255,255,.25);text-align:center;cursor:pointer;padding:10px;margin-top:4px}
+
+/* SETTINGS ROWS */
+.settings-inp{background:transparent;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--t1);flex:1;text-align:right}
+.settings-inp::placeholder{color:var(--t3)}
+
+/* GUIDE */
+.gstep{display:flex;gap:12px;padding:14px 16px;border-bottom:.5px solid var(--sep)}
+.gstep:last-child{border-bottom:none}
+.gnum{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.gtx{flex:1}
+.gtit{font-size:14px;font-weight:600;margin-bottom:3px}
+.gsub{font-size:12px;color:var(--t3);line-height:1.5}
+.gbadge{display:inline-block;background:var(--bg);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:600;margin-top:5px;color:var(--t2)}
+
+.hidden{display:none!important}
+.ph{padding:14px}
+.mt8{margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+
+<!-- STATUS BAR -->
+<div class="sbar">
+  <span class="sbar-t" id="clock">9:41</span>
+  <span class="sbar-i">●●● WiFi 🔋</span>
+</div>
+
+<!-- ══════ SETUP SCREEN ══════ -->
+<div class="setup" id="setup-scr">
+  <div class="setup-logo">📄</div>
+  <div class="setup-ttl">Welcome to InvoiceKit</div>
+  <div class="setup-sub">Enter your company details once.<br/>Generate professional invoices in seconds.</div>
+
+  <div class="setup-sec">Your Company</div>
+  <div class="setup-card">
+    <div class="setup-row"><span class="setup-lbl">Company Name</span><input class="setup-inp" id="su-co" placeholder="e.g. ABC Trading LLC" autocomplete="organization"/></div>
+    <div class="setup-row"><span class="setup-lbl">Address</span><input class="setup-inp" id="su-addr" placeholder="City, Country"/></div>
+    <div class="setup-row"><span class="setup-lbl">Email</span><input class="setup-inp" id="su-email" type="email" placeholder="billing@company.com"/></div>
+    <div class="setup-row"><span class="setup-lbl">Phone</span><input class="setup-inp" id="su-phone" type="tel" placeholder="+971…"/></div>
+    <div class="setup-row"><span class="setup-lbl">Currency</span><input class="setup-inp" id="su-cur" placeholder="AED" value="AED"/></div>
+  </div>
+
+  <div class="setup-sec">Your Bank Account <span style="font-weight:400;opacity:.6">(optional — add later)</span></div>
+  <div class="setup-card">
+    <div class="setup-row"><span class="setup-lbl">Bank Name</span><input class="setup-inp" id="su-bn" placeholder="e.g. First Abu Dhabi Bank"/></div>
+    <div class="setup-row"><span class="setup-lbl">Acc Name</span><input class="setup-inp" id="su-an" placeholder="Account holder name"/></div>
+    <div class="setup-row"><span class="setup-lbl">Acc No.</span><input class="setup-inp" id="su-ano" placeholder="Account number" style="font-family:monospace"/></div>
+    <div class="setup-row"><span class="setup-lbl">IBAN</span><input class="setup-inp" id="su-ib" placeholder="AE…" style="font-family:monospace"/></div>
+    <div class="setup-row"><span class="setup-lbl">SWIFT</span><input class="setup-inp" id="su-sw" placeholder="XXXXXXXX" style="font-family:monospace"/></div>
+  </div>
+
+  <div style="width:100%">
+    <button class="btn btn-gold" onclick="completeSetup()" style="font-size:16px;padding:15px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Save &amp; Get Started
+    </button>
+    <div class="setup-skip" onclick="skipSetup()">Skip for now — I'll add details later →</div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══════ SCREEN: CREATE ══════ -->
+<div class="scr on" id="s-create">
+  <div class="nav">
+    <div class="nav-r">
+      <button class="nbtn" onclick="resetForm()">Clear</button>
+      <span class="nav-t">New Invoice</span>
+      <button class="nbtn b" style="color:var(--blue)" onclick="doGenerate()">Generate ↓</button>
+    </div>
+  </div>
+
+  <!-- Direction toggle -->
+  <div class="seg">
+    <button class="sg on" id="sg0" onclick="setDir('out',0)">My Co → Client</button>
+    <button class="sg" id="sg1" onclick="setDir('in',1)">Vendor → My Co</button>
+  </div>
+
+  <!-- Invoice meta -->
+  <div class="sec" style="margin-top:18px">
+    <div class="sec-t">Invoice Details</div>
+    <div class="card">
+      <div class="row">
+        <div class="ico c-n"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <span class="rl">Invoice #</span>
+        <span class="rv" id="inv-num" style="color:var(--t1);font-weight:600;font-family:monospace"></span>
+      </div>
+      <div class="row">
+        <div class="ico c-b"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <span class="rl">Issue Date</span>
+        <input type="date" class="inp" id="issue-date"/>
+      </div>
+      <div class="row">
+        <div class="ico c-o"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <span class="rl">Due Date</span>
+        <input type="date" class="inp" id="due-date"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- FROM -->
+  <div class="sec">
+    <div class="sec-t"><span id="from-lbl">From (My Company)</span></div>
+    <div class="card" id="from-my">
+      <div class="row">
+        <div class="ico c-gd"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div id="my-from-name" style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="my-from-addr" style="font-size:11px;color:var(--t3);margin-top:1px">—</div>
+        </div>
+        <button class="nbtn" style="font-size:12px" onclick="goSettings()">Edit</button>
+      </div>
+    </div>
+    <div class="card hidden" id="from-vendor">
+      <div class="row"><div class="ico c-b"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="rl">Company</span><input class="inp" id="v-name" placeholder="Vendor Name"/></div>
+      <div class="row"><div class="ico c-o"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><span class="rl">Address</span><input class="inp" id="v-addr" placeholder="City, Country"/></div>
+    </div>
+  </div>
+
+  <!-- BILL TO -->
+  <div class="sec">
+    <div class="sec-t"><span id="to-lbl">Bill To (Client)</span></div>
+    <div class="card" id="to-client">
+      <div class="row"><div class="ico c-g"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="rl">Company</span><input class="inp" id="cl-name" placeholder="Client Name"/></div>
+      <div class="row"><div class="ico c-o"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><span class="rl">Address</span><input class="inp" id="cl-addr" placeholder="City, Country"/></div>
+    </div>
+    <div class="card hidden" id="to-my">
+      <div class="row">
+        <div class="ico c-gd"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div id="my-to-name" style="font-size:13px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="my-to-addr" style="font-size:11px;color:var(--t3);margin-top:1px">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANK -->
+  <div class="sec">
+    <div class="sec-t">
+      <span id="bank-lbl">🏦 Bank (none selected)</span>
+      <button class="sec-btn" onclick="openBankSheet()">Manage →</button>
+    </div>
+    <div class="card" id="bank-preview">
+      <div class="row" style="cursor:pointer" onclick="openBankSheet()">
+        <div class="ico c-n"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div id="bp-name" style="font-size:14px;font-weight:500;color:var(--t3)">No bank selected — tap to add</div>
+          <div id="bp-acc" style="font-size:11px;color:var(--t3);margin-top:1px"></div>
+        </div>
+        <span class="chev">›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SMART FILL -->
+  <div class="sec">
+    <div class="sec-t">✨ Smart Auto-Fill</div>
+    <div class="card">
+      <div class="row">
+        <div class="ico c-gd"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <span class="rl">Total Amount</span>
+        <input type="number" class="inp" id="smart-amt" placeholder="e.g. 50000" style="font-size:16px;font-weight:700;color:var(--blue)" oninput="onAmt()"/>
+        <span id="cur-lbl" style="font-size:13px;color:var(--t3);margin-left:4px;flex-shrink:0">AED</span>
+      </div>
+      <div class="row">
+        <div class="ico c-n"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+        <span class="rl">No. of Items</span>
+        <div class="stp">
+          <button class="stp-b" onclick="chN(-1)">−</button>
+          <div class="stp-v" id="nval">4</div>
+          <button class="stp-b" onclick="chN(1)">+</button>
+        </div>
+      </div>
+      <div class="ph">
+        <button class="btn btn-gold" style="font-size:14px;padding:12px" onclick="doSmartFill()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Auto-Generate Unique Services
+        </button>
+        <p id="fill-hint" class="hidden" style="text-align:center;font-size:11px;color:var(--t3);margin-top:7px">🔀 Every invoice gets a completely different combination</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE ITEMS -->
+  <div class="sec">
+    <div class="sec-t">Services / Items</div>
+    <div id="items-wrap"></div>
+    <button class="btn btn-ghost mt8" onclick="addItem()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Item Manually
+    </button>
+  </div>
+
+  <!-- TOTALS -->
+  <div class="sec">
+    <div class="card">
+      <div class="row"><span class="rl">Subtotal</span><span class="rv" id="sub-d" style="color:var(--t1);font-weight:500">—</span></div>
+      <div class="row" style="background:rgba(52,199,89,.05)">
+        <span class="rl" style="font-size:16px;font-weight:700">TOTAL DUE</span>
+        <span class="rv" id="tot-d" style="color:var(--green);font-size:18px;font-weight:700">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERATE -->
+  <div class="sec">
+    <button class="btn btn-gold" onclick="doGenerate()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+      Download Invoice PDF
+    </button>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══════ SCREEN: DASHBOARD ══════ -->
+<div class="scr" id="s-dash">
+  <div class="nav"><span class="nav-lg">Dashboard</span></div>
+  <div class="hero">
+    <div class="hero-lbl">Session Total</div>
+    <div class="hero-amt" id="h-amt">0.00</div>
+    <div class="hero-sub" id="h-sub">No invoices yet</div>
+    <div class="hero-co" id="h-co">My Company</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="st-n">0</div><div class="stat-l">Invoices</div></div>
+    <div class="stat"><div class="stat-v" id="st-a" style="font-size:13px">—</div><div class="stat-l">Average</div></div>
+    <div class="stat"><div class="stat-v" id="st-i">0</div><div class="stat-l">Items</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">Quick Actions</div>
+    <div class="card">
+      <div class="row" style="cursor:pointer" onclick="go('create')"><div class="ico c-b"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><span class="rl">New Invoice</span><span class="chev">›</span></div>
+      <div class="row" style="cursor:pointer" onclick="openBankSheet()"><div class="ico c-gd"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div><span class="rl">Manage Banks</span><span class="chev">›</span></div>
+      <div class="row" style="cursor:pointer" onclick="go('settings')"><div class="ico c-g"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div><span class="rl">Company Settings</span><span class="chev">›</span></div>
+      <div class="row" style="cursor:pointer" onclick="go('guide')"><div class="ico c-n"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><span class="rl">iOS Install Guide</span><span class="chev">›</span></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">Recent Invoices</div>
+    <div id="recent-wrap"><div style="text-align:center;padding:28px 20px;color:var(--t3);font-size:13px">No invoices yet</div></div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══════ SCREEN: HISTORY ══════ -->
+<div class="scr" id="s-history">
+  <div class="nav"><span class="nav-lg">History</span></div>
+  <div style="padding:0 14px 16px" id="hist-wrap">
+    <div style="text-align:center;padding:60px 20px;color:var(--t3)">
+      <div style="font-size:46px;margin-bottom:12px">🗂</div>
+      <div style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:6px">No Invoices Yet</div>
+      <div style="font-size:13px;line-height:1.5">Invoices appear here after you generate them</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SCREEN: SETTINGS ══════ -->
+<div class="scr" id="s-settings">
+  <div class="nav">
+    <div class="nav-r">
+      <span style="width:54px"></span>
+      <span class="nav-t">Company Settings</span>
+      <button class="nbtn b" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+  <div class="sec" style="margin-top:16px">
+    <div class="sec-t">Company Info</div>
+    <div class="card">
+      <div class="row"><span class="rl">Name</span><input class="settings-inp" id="st-co" placeholder="Company Name"/></div>
+      <div class="row"><span class="rl">Address</span><input class="settings-inp" id="st-addr" placeholder="City, Country"/></div>
+      <div class="row"><span class="rl">Email</span><input class="settings-inp" id="st-email" type="email" placeholder="billing@company.com"/></div>
+      <div class="row"><span class="rl">Phone</span><input class="settings-inp" id="st-phone" type="tel" placeholder="+971…"/></div>
+      <div class="row"><span class="rl">TRN / VAT</span><input class="settings-inp" id="st-trn" placeholder="Tax Reg. No."/></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">Invoice Preferences</div>
+    <div class="card">
+      <div class="row"><span class="rl">Currency</span><input class="settings-inp" id="st-cur" placeholder="AED"/></div>
+      <div class="row"><span class="rl">Inv. Prefix</span><input class="settings-inp" id="st-pfx" placeholder="INV-"/></div>
+      <div class="row"><span class="rl">Payment Days</span><input class="settings-inp" id="st-days" type="number" placeholder="10"/></div>
+    </div>
+  </div>
+  <div class="sec">
+    <button class="btn btn-blue" onclick="saveSettings()">Save Settings</button>
+    <div style="height:8px"></div>
+    <button class="btn btn-red mt8" onclick="resetAll()">Reset All App Data</button>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ══════ SCREEN: iOS GUIDE ══════ -->
+<div class="scr" id="s-guide">
+  <div class="nav"><div class="nav-r"><span style="width:50px"></span><span class="nav-t">iOS Install Guide</span><span style="width:50px"></span></div></div>
+  <div class="sec" style="margin-top:16px">
+    <div class="sec-t">Add to iPhone Home Screen</div>
+    <div class="card">
+      <div class="gstep"><div class="gnum">1</div><div class="gtx"><div class="gtit">Open in Safari</div><div class="gsub">Open your GitHub Pages link in Safari on iPhone. Must be Safari — not Chrome.</div><div class="gbadge">🦁 Safari only</div></div></div>
+      <div class="gstep"><div class="gnum">2</div><div class="gtx"><div class="gtit">Tap Share ⬆</div><div class="gsub">Tap the Share icon at the bottom of Safari — the box with an arrow pointing up.</div></div></div>
+      <div class="gstep"><div class="gnum">3</div><div class="gtx"><div class="gtit">Add to Home Screen</div><div class="gsub">Scroll in the share sheet and tap "Add to Home Screen".</div><div class="gbadge">📱 Add to Home Screen</div></div></div>
+      <div class="gstep"><div class="gnum">4</div><div class="gtx"><div class="gtit">Tap Add</div><div class="gsub">Name it "InvoiceKit" and tap Add. Done! It's on your home screen like a real app.</div><div class="gbadge">✅ Works offline too!</div></div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">PDF on iPhone</div>
+    <div class="card">
+      <div class="gstep"><div class="gnum">💡</div><div class="gtx"><div class="gtit">PDF opens in new tab</div><div class="gsub">Tap "Download Invoice PDF" — it opens the PDF in a new Safari tab. Then tap Share ⬆ to save to Files or send via WhatsApp / Email.</div></div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-t">GitHub Pages Setup</div>
+    <div class="card">
+      <div class="gstep"><div class="gnum">1</div><div class="gtx"><div class="gtit">Create GitHub account</div><div class="gsub">Go to github.com and sign up free.</div></div></div>
+      <div class="gstep"><div class="gnum">2</div><div class="gtx"><div class="gtit">New Repository</div><div class="gsub">Click + → New Repository → name it "invoicekit" → Public → Create.</div></div></div>
+      <div class="gstep"><div class="gnum">3</div><div class="gtx"><div class="gtit">Upload index.html</div><div class="gsub">Click "uploading an existing file" → drag your index.html → Commit changes.</div></div></div>
+      <div class="gstep"><div class="gnum">4</div><div class="gtx"><div class="gtit">Enable Pages</div><div class="gsub">Settings → Pages → Branch: main → Save. Wait 1 min.</div></div></div>
+      <div class="gstep"><div class="gnum">5</div><div class="gtx"><div class="gtit">Your live link</div><div class="gsub">yourusername.github.io/invoicekit — open this in Safari on iPhone!</div><div class="gbadge">🎉 Live forever, free!</div></div></div>
+    </div>
+  </div>
+  <div style="height:20px"></div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tbar">
+  <div class="ti" id="t-dash" onclick="go('dash')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span>Dashboard</span></div>
+  <div class="ti on" id="t-create" onclick="go('create')"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg><span>Create</span></div>
+  <div class="ti" id="t-history" onclick="go('history')"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>History</span></div>
+  <div class="ti" id="t-settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Settings</span></div>
+  <div class="ti" id="t-guide" onclick="go('guide')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Guide</span></div>
+</div>
+
+<!-- SHEET: BANK MANAGER -->
+<div class="ov" id="bank-ov" onclick="closeOv('bank-ov')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="shdl"></div>
+    <div class="shtit">Bank Accounts</div>
+    <div style="padding:0 14px">
+      <div id="bank-list"></div>
+      <div style="margin-top:10px">
+        <button class="btn btn-ghost" style="font-size:14px;padding:12px" onclick="openAddBank(null)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add New Bank Account
+        </button>
+      </div>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost" onclick="closeOv('bank-ov')">Close</button>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+</div>
+
+<!-- SHEET: ADD / EDIT BANK -->
+<div class="ov" id="addbank-ov" onclick="closeOv('addbank-ov')">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="shdl"></div>
+    <div class="shtit" id="addbank-ttl">Add Bank Account</div>
+    <div style="padding:0 14px">
+      <input type="hidden" id="edit-bid"/>
+      <div class="card" style="margin-bottom:12px">
+        <div class="row"><span class="rl">Label</span><input class="inp" id="b-lbl" placeholder="e.g. Main Account, Savings"/></div>
+        <div class="row"><span class="rl">Bank Name</span><input class="inp" id="b-name" placeholder="Your Bank Name"/></div>
+        <div class="row"><span class="rl">Acc Name</span><input class="inp" id="b-aname" placeholder="Account Holder Name"/></div>
+        <div class="row"><span class="rl">Acc No.</span><input class="inp" id="b-ano" placeholder="Account Number" style="font-family:monospace"/></div>
+        <div class="row"><span class="rl">IBAN</span><input class="inp" id="b-iban" placeholder="AE…" style="font-family:monospace"/></div>
+        <div class="row"><span class="rl">SWIFT</span><input class="inp" id="b-swift" placeholder="XXXXXXXX" style="font-family:monospace"/></div>
+        <div class="row"><span class="rl">Currency</span><input class="inp" id="b-cur" placeholder="AED"/></div>
+      </div>
+      <button class="btn btn-gold" onclick="saveBank()">Save Bank Account</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost" onclick="closeOv('addbank-ov')">Cancel</button>
+    </div>
+    <div style="height:12px"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+</div><!-- /wrap -->
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════════════
+const S = {
+  get(k,d){ try{const v=localStorage.getItem(k);return v!=null?JSON.parse(v):d;}catch(e){return d;} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} },
+  clear(){ try{localStorage.clear();}catch(e){} }
+};
+
+// ═══════════════════════════════════════════════
+//  APP STATE — all empty by default
+// ═══════════════════════════════════════════════
+let co = S.get('co',{name:'',addr:'',email:'',phone:'',trn:'',currency:'AED',prefix:'INV-',days:10});
+let banks = S.get('banks',[]);
+let activeBank = S.get('activeBank','');
+let history = S.get('history',[]);
+let invN = S.get('invN', 1000);
+let items = [];
+let numItems = 4;
+let dir = 'out';
+const combosUsed = new Set();
+
+// ═══════════════════════════════════════════════
+//  120+ IT SERVICES
+// ═══════════════════════════════════════════════
+const SVC = [
+  "Cloud infrastructure design & deployment","Multi-cloud architecture strategy & implementation",
+  "Cloud cost optimization & FinOps consulting","Hybrid cloud migration & integration services",
+  "Cloud-native application modernization","Serverless architecture design & deployment",
+  "Cloud disaster recovery planning & setup","Kubernetes cluster management & orchestration",
+  "AWS infrastructure setup & management","Azure cloud environment configuration",
+  "Google Cloud Platform deployment services","Cloud security posture management (CSPM)",
+  "Cloud storage optimization & lifecycle management","Cloud monitoring & observability platform setup",
+  "Cybersecurity assessment & penetration testing","Zero-trust network architecture implementation",
+  "Security operations center (SOC) setup","Vulnerability scanning & risk remediation",
+  "Identity & access management (IAM) implementation","Endpoint detection & response (EDR) deployment",
+  "Managed detection & response (MDR) services","Security information & event management (SIEM)",
+  "Data loss prevention (DLP) solution deployment","Firewall configuration & network segmentation",
+  "Phishing simulation & security awareness training","Incident response planning & tabletop exercises",
+  "PKI infrastructure design & certificate management","Privileged access management (PAM) implementation",
+  "Compliance gap analysis (ISO 27001 / NIST / PCI-DSS)","Dark web monitoring & threat intelligence",
+  "Network infrastructure design & implementation","Software-defined WAN (SD-WAN) configuration",
+  "Network performance monitoring & optimization","LAN/WAN design & structured cabling oversight",
+  "Wi-Fi 6 enterprise wireless network deployment","Network access control (NAC) implementation",
+  "BGP/OSPF routing protocol configuration","MPLS network design & provisioning",
+  "Network automation using Ansible & Python","Load balancer configuration & traffic management",
+  "Full-stack enterprise application development","Custom ERP module development & deployment",
+  "API gateway design & microservices integration","Mobile application development (iOS & Android)",
+  "Legacy system modernization & re-platforming","Low-code platform customization & deployment",
+  "CRM system implementation & data migration","E-commerce platform development & integration",
+  "DevOps pipeline & CI/CD automation setup","Agile software project management & delivery",
+  "UI/UX design & frontend development services","Quality assurance & automated testing framework",
+  "Software architecture review & technical debt audit","Blockchain smart contract development & audit",
+  "AI-powered data analytics platform integration","Big data pipeline architecture & cloud storage",
+  "Business intelligence dashboard development","Machine learning model development & deployment",
+  "Data warehouse design & ETL pipeline setup","Real-time streaming analytics with Apache Kafka",
+  "Natural language processing (NLP) solution","Computer vision & image recognition system",
+  "Data governance framework implementation","Master data management (MDM) setup",
+  "Predictive analytics & forecasting solution","Data lake architecture on cloud platforms",
+  "IT infrastructure consulting & architecture review","Virtualization & private cloud setup (VMware/Hyper-V)",
+  "Data backup & disaster recovery planning","IT asset management & CMDB implementation",
+  "Unified communications & VoIP system deployment","Video conferencing infrastructure setup",
+  "Managed IT support & SLA-based helpdesk services","IT service management (ITSM) implementation",
+  "Active Directory design & group policy management","Email security gateway & spam filtering setup",
+  "Patch management & vulnerability lifecycle program","IT project management & technical consultancy",
+  "Procurement support for IT hardware & licensing","Data center relocation & infrastructure migration",
+  "IoT infrastructure design & smart system integration","Industrial IoT (IIoT) platform deployment",
+  "Smart building automation & BMS integration","RFID tracking system design & deployment",
+  "Edge computing architecture & implementation","Quantum-resistant encryption strategy consulting",
+  "5G network readiness assessment & planning","Digital twin modeling & simulation services",
+  "Robotic process automation (RPA) deployment","Augmented reality (AR) solution development",
+  "IT governance, risk & compliance (GRC) framework","Information security policy development",
+  "GDPR / data privacy compliance consulting","Business continuity planning & BIA assessment",
+  "IT audit support & evidence documentation","Vendor risk management program setup",
+  "Technology roadmap & digital transformation strategy","IT budget planning & TCO analysis",
+  "Algorithmic trading analytics & reporting","Fintech platform security & compliance review",
+  "Enterprise software licensing management","Database management & performance optimization",
+  "24/7 infrastructure monitoring & alerting setup","SLA-based application performance management",
+  "SharePoint intranet portal design & deployment","Microsoft 365 tenant migration & optimization",
+  "Google Workspace administration & security hardening","ERP upgrade & system performance tuning",
+  "Helpdesk ticketing system implementation","Remote desktop & virtual desktop infrastructure (VDI)",
+  "Wireless site survey & RF planning","SD-LAN deployment & microsegmentation",
+  "Container security & DevSecOps implementation","API security testing & OAuth integration",
+  "Zero-downtime database migration services","SaaS application integration & SSO setup",
+  "IT change management & release planning","Capacity planning & infrastructure scaling",
+  "Log management & SIEM alert tuning","Digital forensics & incident investigation support",
+];
+
+// ═══════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════
+const cur = () => co.currency || 'AED';
+const pfx = () => co.prefix || 'INV-';
+const fmtN = n => Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const iso = d => d.toISOString().split('T')[0];
+const dsp = s => s ? s.split('-').reverse().join('.') : '—';
+const $ = id => document.getElementById(id);
+const tok = (m,t='') => {
+  const el=$('toast'); el.textContent=m; el.className='toast on '+t;
+  clearTimeout(tok._t); tok._t=setTimeout(()=>el.className='toast',2800);
+};
+const getAB = () => banks.find(b=>b.id===activeBank) || null;
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  tick(); setInterval(tick, 15000);
+  setDates();
+  refreshInvNum();
+  addItem(); addItem(); addItem(); addItem();
+  refreshMyCoUI();
+  refreshBankPreview();
+  go('create');
+  if(!S.get('setup',false)) setTimeout(()=>$('setup-scr').style.display='flex', 200);
+  else $('setup-scr').style.display='none';
+});
+
+function tick(){
+  const n=new Date();
+  $('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+function setDates(){
+  const t=new Date();
+  $('issue-date').value=iso(t);
+  const d=new Date(t); d.setDate(d.getDate()+(parseInt(co.days)||10));
+  $('due-date').value=iso(d);
+}
+
+function refreshInvNum(){
+  $('inv-num').textContent = pfx()+String(invN).padStart(4,'0');
+}
+
+function refreshMyCoUI(){
+  const n=co.name||'(not set — go to Settings)';
+  const a=co.addr||'';
+  ['from','to'].forEach(p=>{
+    $('my-'+p+'-name').textContent=n;
+    $('my-'+p+'-addr').textContent=a;
+  });
+  $('h-co').textContent = co.name||'My Company';
+  $('cur-lbl').textContent = cur();
+  const s0=$('sg0'), s1=$('sg1');
+  if(s0) s0.textContent=(co.name||'My Co').split(' ')[0]+' → Client';
+  if(s1) s1.textContent='Vendor → '+(co.name||'My Co').split(' ')[0];
+}
+
+function refreshBankPreview(){
+  const b=getAB();
+  $('bank-lbl').textContent = b ? '🏦 '+b.label : '🏦 No bank selected';
+  $('bp-name').textContent  = b ? b.name : 'No bank selected — tap to add';
+  $('bp-acc').textContent   = b ? (b.accName||'')+(b.accNo?' · '+b.accNo:'') : '';
+  $('bp-name').style.color  = b ? 'var(--t1)' : 'var(--t3)';
+}
+
+// ═══════════════════════════════════════════════
+//  SETUP
+// ═══════════════════════════════════════════════
+function completeSetup(){
+  const n=gv('su-co'),a=gv('su-addr'),e=gv('su-email'),p=gv('su-phone'),c=gv('su-cur')||'AED';
+  if(!n){ tok('Please enter your company name','err'); return; }
+  co.name=n; co.addr=a; co.email=e; co.phone=p; co.currency=c;
+  S.set('co',co);
+  // Bank
+  const bn=gv('su-bn'),ban=gv('su-an'),bno=gv('su-ano'),ib=gv('su-ib'),sw=gv('su-sw');
+  if(bn&&ban){
+    const id='b'+Date.now();
+    banks.push({id,label:bn,name:bn,accName:ban,accNo:bno,iban:ib,swift:sw,currency:c});
+    activeBank=id;
+    S.set('banks',banks); S.set('activeBank',activeBank);
+  }
+  S.set('setup',true);
+  $('setup-scr').style.display='none';
+  refreshMyCoUI(); refreshBankPreview(); refreshInvNum();
+  tok('✅ Welcome! InvoiceKit is ready.','ok');
+}
+function skipSetup(){ S.set('setup',true); $('setup-scr').style.display='none'; }
+function gv(id){ return ($(''+id)||{value:''}).value.trim(); }
+
+// ═══════════════════════════════════════════════
+//  TABS / NAVIGATION
+// ═══════════════════════════════════════════════
+const TABS=['dash','create','history','settings','guide'];
+function go(tab){
+  TABS.forEach(t=>{
+    const s=$('s-'+t), ti=$('t-'+t);
+    if(s) s.classList.toggle('on',t===tab);
+    if(ti) ti.classList.toggle('on',t===tab);
+  });
+  if(tab==='dash') renderDash();
+  if(tab==='history') renderHistory();
+  if(tab==='settings') loadSettingsUI();
+}
+function goSettings(){ go('settings'); }
+
+// ═══════════════════════════════════════════════
+//  DIRECTION
+// ═══════════════════════════════════════════════
+function setDir(d,i){
+  dir=d;
+  document.querySelectorAll('.sg').forEach((b,j)=>b.classList.toggle('on',j===i));
+  const isOut=d==='out';
+  tog('from-my',isOut); tog('from-vendor',!isOut);
+  tog('to-client',isOut); tog('to-my',!isOut);
+  $('from-lbl').textContent=isOut?'From (My Company)':'From (Vendor)';
+  $('to-lbl').textContent=isOut?'Bill To (Client)':'Bill To (My Company)';
+}
+function tog(id,show){ $(id).classList.toggle('hidden',!show); }
+
+// ═══════════════════════════════════════════════
+//  ITEMS
+// ═══════════════════════════════════════════════
+function addItem(desc='',qty=1,price=''){
+  items.push({id:Date.now()+Math.random(),desc,qty,price});
+  renderItems();
+}
+function removeItem(id){
+  if(items.length<=1){ tok('Keep at least 1 item','err'); return; }
+  items=items.filter(i=>i.id!==id); renderItems();
+}
+function calcAmt(it){ return (parseFloat(it.price)||0)*(parseFloat(it.qty)||1); }
+function updItem(id,f,v){ const it=items.find(i=>i.id===id); if(it){it[f]=v;updateTotals();} }
+
+function renderItems(){
+  const c=$('items-wrap'); c.innerHTML='';
+  items.forEach((it,idx)=>{
+    const amt=calcAmt(it);
+    const d=document.createElement('div');
+    d.className='icard';
+    d.innerHTML=`
+      <div class="icard-h">
+        <div class="inum">${idx+1}</div>
+        <span style="flex:1;font-size:12px;color:var(--t3);margin:0 8px">Item ${idx+1}</span>
+        <span class="iamt">${amt>0?fmtN(amt)+' '+cur():'—'}</span>
+        <button class="idel" style="margin-left:8px" onclick="removeItem(${it.id})">×</button>
+      </div>
+      <div style="padding:8px 14px 6px">
+        <input list="svc-dl" style="width:100%;background:rgba(0,0,0,.04);border:none;outline:none;border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--t1)"
+          value="${esc(it.desc)}" placeholder="Service / item description…"
+          oninput="updItem(${it.id},'desc',this.value)"/>
+      </div>
+      <div class="row" style="padding:9px 14px"><span class="rl">Qty</span>
+        <input type="number" style="width:48px;text-align:center;background:transparent;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--t1)"
+          value="${it.qty}" min="1" oninput="updItem(${it.id},'qty',this.value)"/>
+      </div>
+      <div class="row" style="padding:9px 14px"><span class="rl">Unit Price</span>
+        <input type="number" style="flex:1;text-align:right;background:transparent;border:none;outline:none;font-family:inherit;font-size:14px;color:var(--t1)"
+          value="${it.price}" placeholder="0.00" oninput="updItem(${it.id},'price',this.value)"/>
+        <span style="font-size:13px;color:var(--t3);margin-left:4px">${cur()}</span>
+      </div>
+      <div class="row" style="padding:9px 14px;background:rgba(52,199,89,.05)">
+        <span class="rl" style="font-weight:600">Amount</span>
+        <span style="flex:1;text-align:right;font-weight:700;font-size:15px;color:var(--green)">${amt>0?fmtN(amt)+' '+cur():'—'}</span>
+      </div>`;
+    c.appendChild(d);
+  });
+  if(!$('svc-dl')){
+    const dl=document.createElement('datalist'); dl.id='svc-dl';
+    SVC.forEach(s=>{const o=document.createElement('option');o.value=s;dl.appendChild(o);});
+    document.body.appendChild(dl);
+  }
+  updateTotals();
+}
+
+function updateTotals(){
+  const t=items.reduce((s,i)=>s+calcAmt(i),0);
+  const f=fmtN(t)+' '+cur();
+  $('sub-d').textContent=f; $('tot-d').textContent=f;
+}
+
+// ═══════════════════════════════════════════════
+//  SMART FILL
+// ═══════════════════════════════════════════════
+function chN(d){ numItems=Math.max(2,Math.min(10,numItems+d)); $('nval').textContent=numItems; }
+function onAmt(){ $('fill-hint').classList.remove('hidden'); }
+
+function smartFill(total,n){
+  let chosen=null,t=0;
+  while(t++<300){
+    const pool=[...SVC].sort(()=>Math.random()-.5);
+    const pick=pool.slice(0,n);
+    const key=[...pick].sort().join('||');
+    if(!combosUsed.has(key)){ combosUsed.add(key); chosen=pick; break; }
+  }
+  if(!chosen) chosen=[...SVC].sort(()=>Math.random()-.5).slice(0,n);
+  const w=Array.from({length:n},()=>Math.random()*.6+.4);
+  const ws=w.reduce((a,b)=>a+b,0);
+  let prices=w.map(wi=>Math.floor((wi/ws)*total*100)/100);
+  const drift=Math.round((total-prices.reduce((a,b)=>a+b,0))*100)/100;
+  prices[prices.length-1]=Math.round((prices[prices.length-1]+drift)*100)/100;
+  return chosen.map((desc,i)=>({id:Date.now()+Math.random()+i,desc,qty:1,price:prices[i].toFixed(2)}));
+}
+
+function doSmartFill(){
+  const total=parseFloat($('smart-amt').value);
+  if(!total||total<=0){ tok('Enter a total amount first!','err'); return; }
+  items=smartFill(total,numItems);
+  renderItems();
+  $('fill-hint').classList.remove('hidden');
+  tok('✨ '+numItems+' unique services generated!','ok');
+  setTimeout(()=>$('items-wrap').scrollIntoView({behavior:'smooth'}),300);
+}
+
+// ═══════════════════════════════════════════════
+//  BANK MANAGER
+// ═══════════════════════════════════════════════
+const BCOLS=['#007AFF','#34C759','#FF9500','#C9A84C','#FF3B30','#5856D6','#FF2D55','#0F1729'];
+const bcol=i=>BCOLS[i%BCOLS.length];
+
+function openBankSheet(){ renderBankList(); openOv('bank-ov'); }
+
+function renderBankList(){
+  const el=$('bank-list');
+  if(!banks.length){
+    el.innerHTML='<p style="text-align:center;padding:20px 0;color:var(--t3);font-size:13px">No banks added yet.<br/>Tap below to add your first bank.</p>';
+    return;
+  }
+  el.innerHTML=banks.map((b,i)=>{
+    const active=b.id===activeBank;
+    return `<div class="bcard${active?' active':''}">
+      <div class="bcard-top" onclick="selectBank('${b.id}')">
+        <div class="bico" style="background:${bcol(i)}">${(b.label||b.name||'B')[0].toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div class="bname" style="color:${active?'var(--blue)':'var(--t1)'}">${esc(b.label||b.name)}</div>
+          <div class="bsub">${esc(b.name)}${b.accNo?' · '+esc(b.accNo):''}</div>
+        </div>
+        ${active?'<span style="color:var(--blue);font-size:20px;font-weight:700">✓</span>':'<span style="color:var(--t3);font-size:16px">›</span>'}
+      </div>
+      <div class="bbtns">
+        <button class="bbtn" style="color:var(--blue);border-right:.5px solid var(--sep)" onclick="openAddBank('${b.id}')">✏️ Edit</button>
+        ${banks.length>1?`<button class="bbtn" style="color:var(--red)" onclick="delBank('${b.id}')">🗑 Delete</button>`:'<div style="flex:1"></div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectBank(id){
+  activeBank=id; S.set('activeBank',activeBank);
+  refreshBankPreview(); renderBankList();
+  closeOv('bank-ov');
+  tok('✅ '+(banks.find(b=>b.id===id)||{}).label+' selected','ok');
+}
+
+function openAddBank(id){
+  const b=id?banks.find(x=>x.id===id):null;
+  $('addbank-ttl').textContent=b?'Edit Bank Account':'Add Bank Account';
+  $('edit-bid').value=b?b.id:'';
+  $('b-lbl').value  =b?b.label  :'';
+  $('b-name').value =b?b.name   :'';
+  $('b-aname').value=b?b.accName:'';
+  $('b-ano').value  =b?b.accNo  :'';
+  $('b-iban').value =b?b.iban   :'';
+  $('b-swift').value=b?b.swift  :'';
+  $('b-cur').value  =b?(b.currency||cur()):cur();
+  closeOv('bank-ov');
+  openOv('addbank-ov');
+}
+
+function saveBank(){
+  const lbl  =gv('b-lbl');
+  const name =gv('b-name');
+  const aname=gv('b-aname');
+  const ano  =gv('b-ano');
+  const iban =gv('b-iban');
+  const swift=gv('b-swift');
+  const bcur =gv('b-cur')||cur();
+  if(!name){ tok('Enter bank name','err'); return; }
+  if(!aname){ tok('Enter account holder name','err'); return; }
+  const eid=$('edit-bid').value;
+  if(eid){
+    const b=banks.find(x=>x.id===eid);
+    if(b) Object.assign(b,{label:lbl||name,name,accName:aname,accNo:ano,iban,swift,currency:bcur});
+  } else {
+    const id='b'+Date.now();
+    banks.push({id,label:lbl||name,name,accName:aname,accNo:ano,iban,swift,currency:bcur});
+    if(!activeBank){ activeBank=id; S.set('activeBank',activeBank); }
+  }
+  S.set('banks',banks);
+  refreshBankPreview();
+  closeOv('addbank-ov');
+  setTimeout(()=>{ renderBankList(); openOv('bank-ov'); },150);
+  tok('✅ Bank saved','ok');
+}
+
+function delBank(id){
+  if(!confirm('Delete this bank?')) return;
+  banks=banks.filter(b=>b.id!==id);
+  if(activeBank===id) activeBank=banks[0]?banks[0].id:'';
+  S.set('banks',banks); S.set('activeBank',activeBank);
+  refreshBankPreview(); renderBankList();
+  tok('Bank deleted');
+}
+
+// ═══════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════
+function loadSettingsUI(){
+  $('st-co').value   = co.name    ||'';
+  $('st-addr').value = co.addr    ||'';
+  $('st-email').value= co.email   ||'';
+  $('st-phone').value= co.phone   ||'';
+  $('st-trn').value  = co.trn     ||'';
+  $('st-cur').value  = co.currency||'AED';
+  $('st-pfx').value  = co.prefix  ||'INV-';
+  $('st-days').value = co.days    ||10;
+}
+
+function saveSettings(){
+  co.name    = gv('st-co');
+  co.addr    = gv('st-addr');
+  co.email   = gv('st-email');
+  co.phone   = gv('st-phone');
+  co.trn     = gv('st-trn');
+  co.currency= gv('st-cur')||'AED';
+  co.prefix  = gv('st-pfx')||'INV-';
+  co.days    = parseInt(gv('st-days'))||10;
+  if(!co.name){ tok('Company name is required','err'); return; }
+  S.set('co',co);
+  refreshMyCoUI(); refreshBankPreview(); refreshInvNum();
+  tok('✅ Settings saved','ok');
+  go('dash');
+}
+
+function resetAll(){
+  if(!confirm('Delete ALL data? Company, banks, history — everything.')) return;
+  S.clear(); location.reload();
+}
+
+// ═══════════════════════════════════════════════
+//  FORM DATA & VALIDATION
+// ═══════════════════════════════════════════════
+function getFormData(){
+  const isOut=dir==='out';
+  const b=getAB();
+  return {
+    invNo: pfx()+String(invN).padStart(4,'0'),
+    issueDate: $('issue-date').value,
+    dueDate: $('due-date').value,
+    fromCo: isOut?(co.name||''):(gv('v-name')),
+    fromAddr: isOut?(co.addr||''):(gv('v-addr')),
+    toCo: isOut?(gv('cl-name')):(co.name||''),
+    toAddr: isOut?(gv('cl-addr')):(co.addr||''),
+    coEmail: co.email||'',
+    coTrn: co.trn||'',
+    bank: b?{...b}:{name:'',accName:'',accNo:'',iban:'',swift:'',currency:cur()},
+    items: items.filter(i=>i.desc&&parseFloat(i.price)>0),
+    total: items.reduce((s,i)=>s+calcAmt(i),0),
+    currency: cur(),
+  };
+}
+
+function validate(d){
+  if(!d.fromCo) return dir==='out'?'Add your company name in Settings →':'Enter vendor name';
+  if(!d.toCo)   return dir==='out'?'Enter client name':'Add your company name in Settings →';
+  if(!d.issueDate) return 'Select issue date';
+  if(!d.items.length) return 'Add at least 1 item with a price';
+  if(!getAB()) return 'Select a bank account first (tap Manage Banks)';
+  return null;
+}
+
+// ═══════════════════════════════════════════════
+//  PDF — BLOB URL (works on GitHub Pages + iOS)
+// ═══════════════════════════════════════════════
+function doGenerate(){
+  const data=getFormData();
+  const err=validate(data);
+  if(err){ tok(err,'err'); return; }
+  if(typeof window.jspdf==='undefined'){ tok('PDF library loading… try again in 2s','err'); return; }
+  try{
+    buildPDF(data);
+    saveInvoice(data);
+    tok('✅ PDF opened! Share or save it.','ok');
+  }catch(e){ console.error(e); tok('PDF error: '+e.message,'err'); }
+}
+
+function buildPDF(data){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const W=210,M=18;
+  let y=0;
+
+  // Header
+  doc.setFillColor(15,23,41); doc.rect(0,0,W,30,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(22); doc.setFont('helvetica','bold');
+  doc.text('INVOICE',M,19);
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(160,170,190);
+  doc.text('No: '+data.invNo+'   |   '+dsp(data.issueDate)+'   |   Due: '+dsp(data.dueDate),W-M,19,{align:'right'});
+  y=40;
+
+  // From / To — independent Y per column so long addresses never overlap
+  const colW=82, col2X=112;
+
+  // Labels row
+  doc.setTextColor(130,130,140); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('FROM',M,y); doc.text('BILL TO',col2X,y);
+
+  // Each column tracks its own vertical position
+  let yL=y+6, yR=y+6;
+
+  // Company names (bold, wrapped independently)
+  doc.setTextColor(20,20,20); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  const fLn=doc.splitTextToSize(data.fromCo||'',colW);
+  const tLn=doc.splitTextToSize(data.toCo||'',colW);
+  doc.text(fLn,M,yL);      yL+=fLn.length*5+2;
+  doc.text(tLn,col2X,yR);  yR+=tLn.length*5+2;
+
+  // Addresses (normal weight, wrapped independently)
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,110);
+  if(data.fromAddr){
+    const adL=doc.splitTextToSize(data.fromAddr,colW);
+    doc.text(adL,M,yL); yL+=adL.length*4.5+1;
+  }
+  if(data.toAddr){
+    const adR=doc.splitTextToSize(data.toAddr,colW);
+    doc.text(adR,col2X,yR); yR+=adR.length*4.5+1;
+  }
+  // Extra info on left only
+  if(data.coEmail){ doc.text(data.coEmail,M,yL); yL+=5; }
+  if(data.coTrn)  { doc.text('TRN: '+data.coTrn,M,yL); yL+=5; }
+
+  // Advance shared y past the taller column
+  y=Math.max(yL,yR)+4;
+
+  // Divider + note
+  doc.setDrawColor(210,210,220); doc.setLineWidth(0.3); doc.line(M,y,W-M,y); y+=5;
+  doc.setFontSize(8); doc.setTextColor(120,120,130);
+  doc.text('We appreciate your continued partnership and hereby invoice the following items:',M,y); y+=7;
+
+  // Table header
+  doc.setFillColor(15,23,41); doc.rect(M,y-4,W-2*M,8,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont('helvetica','bold');
+  doc.text('DESCRIPTION',M+2,y);
+  doc.text('QTY',138,y);
+  doc.text('UNIT PRICE',152,y);
+  doc.text('AMOUNT',188,y,{align:'right'});
+  y+=7;
+
+  // Rows
+  data.items.forEach((it,i)=>{
+    doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?252:255);
+    doc.rect(M,y-4,W-2*M,8,'F');
+    doc.setTextColor(30,30,35); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+    const dl=doc.splitTextToSize(it.desc,108);
+    doc.text(dl,M+2,y);
+    doc.text(String(it.qty||1),138,y);
+    doc.text(fmtN(parseFloat(it.price)||0),152,y);
+    doc.text(fmtN(calcAmt(it)),188,y,{align:'right'});
+    y+=dl.length>1?dl.length*5+1:8;
+  });
+  y+=3;
+
+  // Separator
+  doc.setDrawColor(210,210,220); doc.line(M,y,W-M,y); y+=7;
+
+  // Bank details (left column)
+  const bankY=y;
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(30,30,35);
+  doc.text('Payment can be made to the following bank:',M,y); y+=6;
+  const bRows=[
+    ['Account Name:',data.bank.accName||''],
+    ['Account No.:' ,data.bank.accNo  ||''],
+    ['IBAN:'        ,data.bank.iban   ||''],
+    ['BIC/SWIFT:'   ,data.bank.swift  ||''],
+    ['Bank Name:'   ,data.bank.name   ||''],
+    ['Currency:'    ,data.bank.currency||data.currency],
+  ];
+  bRows.forEach(([l,v])=>{
+    doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(70,75,90); doc.text(l,M,y);
+    doc.setFont('helvetica','normal'); doc.setTextColor(20,25,40);
+    const vl=doc.splitTextToSize(v,66); doc.text(vl,M+27,y);
+    y+=Math.max(1,vl.length)*4.5;
+  });
+
+  // Totals (right column, aligned to bankY)
+  const tX=120,tW=W-M-tX; let ty=bankY;
+  // Subtotal
+  doc.setFillColor(248,248,251); doc.rect(tX,ty-4,tW,9,'F');
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(80,80,90);
+  doc.text('SUBTOTAL',tX+3,ty);
+  doc.text(fmtN(data.total)+' '+data.currency,W-M,ty,{align:'right'}); ty+=10;
+  // Total
+  doc.setFillColor(242,242,248); doc.rect(tX,ty-4,tW,9,'F');
+  doc.setFont('helvetica','bold'); doc.setTextColor(50,55,70);
+  doc.text('TOTAL',tX+3,ty);
+  doc.text(fmtN(data.total)+' '+data.currency,W-M,ty,{align:'right'}); ty+=10;
+  // Total Due
+  doc.setFillColor(15,23,41); doc.rect(tX,ty-4,tW,10,'F');
+  doc.setFontSize(10); doc.setTextColor(255,255,255);
+  doc.text('TOTAL DUE',tX+3,ty+1);
+  doc.text(fmtN(data.total)+' '+data.currency,W-M,ty+1,{align:'right'});
+
+  // ── BLOB URL — works on GitHub Pages + iOS Safari ──
+  const blob=doc.output('blob');
+  const url=URL.createObjectURL(blob);
+  const fname=data.invNo+'_'+(data.toCo||'invoice').replace(/[^a-zA-Z0-9]/g,'_').substring(0,20)+'.pdf';
+  // Desktop / Android: download link
+  const a=document.createElement('a');
+  a.href=url; a.download=fname; a.target='_blank';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  // iOS: open in new tab (user taps Share → Save to Files)
+  setTimeout(()=>window.open(url,'_blank'),400);
+}
+
+// ═══════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════
+function saveInvoice(data){
+  history.unshift({...data,at:new Date().toLocaleString()});
+  S.set('history',history.slice(0,200));
+  invN++; S.set('invN',invN);
+  refreshInvNum();
+  renderDash();
+}
+
+function renderDash(){
+  const tot=history.reduce((s,h)=>s+h.total,0);
+  const avg=history.length?tot/history.length:0;
+  const nitems=history.reduce((s,h)=>s+h.items.length,0);
+  $('h-amt').textContent=fmtN(tot)+' '+cur();
+  $('h-sub').textContent=history.length?history.length+' invoice'+(history.length!==1?'s':'')+' generated':'No invoices yet';
+  $('st-n').textContent=history.length;
+  $('st-a').textContent=history.length?fmtN(avg):'—';
+  $('st-i').textContent=nitems;
+  const el=$('recent-wrap');
+  if(!history.length){ el.innerHTML='<div style="text-align:center;padding:28px;color:var(--t3);font-size:13px">No invoices yet</div>'; return; }
+  el.innerHTML=history.slice(0,3).map((h,i)=>hCard(h,i)).join('');
+}
+
+function renderHistory(){
+  const el=$('hist-wrap');
+  if(!history.length){
+    el.innerHTML='<div style="text-align:center;padding:60px 20px;color:var(--t3)"><div style="font-size:46px;margin-bottom:12px">🗂</div><div style="font-size:18px;font-weight:700;color:var(--t1);margin-bottom:6px">No Invoices Yet</div><div style="font-size:13px;line-height:1.5">Generated invoices appear here</div></div>';
+    return;
+  }
+  el.innerHTML=history.map((h,i)=>hCard(h,i)).join('');
+}
+
+function hCard(h,i){
+  const f=(h.fromCo||'').split(' ')[0]||'—';
+  const t=(h.toCo||'').split(' ')[0]||'—';
+  return `<div class="hcard">
+    <div class="hcard-t">
+      <div class="hico">📄</div>
+      <div class="hinfo">
+        <div class="hpar">${esc(f)} → ${esc(t)}</div>
+        <div class="hdat">${dsp(h.issueDate)} · ${h.items.length} items · ${esc(h.invNo)}</div>
+      </div>
+      <div class="hrig">
+        <div class="hamt">${fmtN(h.total)}</div>
+        <div class="hinv">${esc(h.currency||'AED')}</div>
+      </div>
+    </div>
+    <div class="hbtns">
+      <button class="hbtn" style="color:var(--blue);border-right:.5px solid var(--sep)" onclick="rePDF(${i})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+        Download PDF
+      </button>
+      <button class="hbtn" style="color:var(--red)" onclick="delHist(${i})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>`;
+}
+
+function rePDF(i){
+  const h=history[i];
+  if(!h){ tok('Invoice not found','err'); return; }
+  if(typeof window.jspdf==='undefined'){ tok('PDF library loading… try again','err'); return; }
+  try{ buildPDF(h); tok('✅ PDF opened!','ok'); }
+  catch(e){ tok('PDF error: '+e.message,'err'); }
+}
+
+function delHist(i){
+  if(!confirm('Delete this invoice from history?')) return;
+  history.splice(i,1); S.set('history',history);
+  renderDash(); renderHistory(); tok('Deleted');
+}
+
+// ═══════════════════════════════════════════════
+//  RESET FORM
+// ═══════════════════════════════════════════════
+function resetForm(){
+  if(!confirm('Clear invoice form?')) return;
+  items=[]; addItem();addItem();addItem();addItem();
+  setDates();
+  ['cl-name','cl-addr','v-name','v-addr','smart-amt'].forEach(id=>{const e=$(id);if(e)e.value='';});
+  tok('Form cleared');
+}
+
+// ═══════════════════════════════════════════════
+//  OVERLAYS
+// ═══════════════════════════════════════════════
+function openOv(id){ $(id).classList.add('on'); }
+function closeOv(id){ $(id).classList.remove('on'); }
+</script>
+</body>
+</html>
