@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: Build Android APK
@@ -54,11 +57,6 @@ jobs:
           rm -rf android
           npx cap add android
 
-      - name: Copy app into www
-        run: |
-          mkdir -p www
-          ls www/
-
       - name: Sync web assets
         run: npx cap sync android
 
@@ -75,7 +73,7 @@ jobs:
         with:
           name: InvoiceKit-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          retention-days: 90
 
       - name: Get date
         id: date
